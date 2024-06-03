@@ -56,11 +56,6 @@ typedef struct _stack_chunk {
     PyObject * data[1]; /* Variable sized */
 } _PyStackChunk;
 
-struct _py_trashcan {
-    int delete_nesting;
-    PyObject *delete_later;
-};
-
 struct _ts {
     /* See Python/ceval.c for comments explaining most fields */
 
@@ -88,6 +83,8 @@ struct _ts {
         unsigned int bound_gilstate:1;
         /* Currently in use (maybe holds the GIL). */
         unsigned int active:1;
+        /* Currently holds the GIL. */
+        unsigned int holds_gil:1;
 
         /* various stages of finalization */
         unsigned int finalizing:1;
@@ -95,7 +92,7 @@ struct _ts {
         unsigned int finalized:1;
 
         /* padding to align to 4 bytes */
-        unsigned int :24;
+        unsigned int :23;
     } _status;
 #ifdef Py_BUILD_CORE
 #  define _PyThreadState_WHENCE_NOTSET -1
@@ -152,7 +149,7 @@ struct _ts {
      */
     unsigned long native_thread_id;
 
-    struct _py_trashcan trash;
+    PyObject *delete_later;
 
     /* Tagged pointer to top-most critical section, or zero if there is no
      * active critical section. Critical sections are only used in
@@ -193,6 +190,7 @@ struct _ts {
 
     PyObject *previous_executor;
 
+    uint64_t dict_global_version;
 };
 
 #ifdef Py_DEBUG
